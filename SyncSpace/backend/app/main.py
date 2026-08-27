@@ -1,12 +1,26 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import health
+from app.database import init_db
+from app.routers import auth, health
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Lifespan context manager that handles startup and shutdown logic.
+    On startup, it automatically creates database tables if they do not exist.
+    """
+    await init_db()
+    yield
+
 
 app = FastAPI(
     title="AI Chat Platform",
-    description="AI Collaborative Chat Platform — Foundation API",
-    version="0.1.0",
+    description="AI Collaborative Chat Platform — Foundation & Auth API",
+    version="0.2.0",
+    lifespan=lifespan,
 )
 
 # ---------------------------------------------------------------------------
@@ -24,3 +38,4 @@ app.add_middleware(
 # Routers
 # ---------------------------------------------------------------------------
 app.include_router(health.router)
+app.include_router(auth.router)
