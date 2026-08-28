@@ -1,0 +1,9 @@
+{
+  "venvPath": "SyncSpace/backend",
+  "venv": "venv",
+  "extraPaths": [
+    "SyncSpace/backend",
+    "SyncSpace/backend/venv/Lib/site-packages"
+  ],
+  "reportMissingImports": "none"
+}

@@ -1,0 +1,11 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/SyncSpace/backend/venv/Scripts/python.exe",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/SyncSpace/backend",
+    "${workspaceFolder}/SyncSpace/backend/venv/Lib/site-packages"
+  ],
+  "python.autoComplete.extraPaths": [
+    "${workspaceFolder}/SyncSpace/backend",
+    "${workspaceFolder}/SyncSpace/backend/venv/Lib/site-packages"
+  ]
+}

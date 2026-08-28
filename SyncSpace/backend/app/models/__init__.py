@@ -6,5 +6,8 @@ class Base(DeclarativeBase):
 
 
 from app.models.user import User
+from app.models.group import Group
+from app.models.group_member import GroupMember
+from app.models.join_request import JoinRequest
 
-__all__ = ["Base", "User"]
+__all__ = ["Base", "User", "Group", "GroupMember", "JoinRequest"]
