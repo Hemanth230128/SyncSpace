@@ -601,13 +601,35 @@
   background: #b91c1c;
 }
 
-/* Leave Group */
-.leave-block {
+/* Group Actions: Leave & Delete */
+.group-controls-block {
   padding-top: 12px;
   border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .leave-btn {
+  padding: 8px 18px;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.leave-btn:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.delete-group-btn {
   padding: 8px 18px;
   background: #ef4444;
   color: white;
@@ -619,8 +641,13 @@
   transition: background 0.2s;
 }
 
-.leave-btn:hover {
+.delete-group-btn:hover:not(:disabled) {
   background: #dc2626;
+}
+
+.delete-group-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
 }
 
 /* Utility */

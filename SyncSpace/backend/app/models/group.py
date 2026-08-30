@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, func, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
@@ -21,7 +21,7 @@ class Group(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     created_by: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -29,7 +29,7 @@ class Group(Base):
         nullable=False,
     )
 
-    # Relationships
-    creator = relationship("User", backref="created_groups", lazy="selectin")
-    members = relationship("GroupMember", back_populates="group", lazy="selectin", cascade="all, delete-orphan")
-    join_requests = relationship("JoinRequest", back_populates="group", lazy="selectin", cascade="all, delete-orphan")
+    # Relationships — without lazy="selectin" to prevent recursive cascading queries
+    creator = relationship("User", backref="created_groups")
+    members = relationship("GroupMember", back_populates="group", cascade="all, delete-orphan")
+    join_requests = relationship("JoinRequest", back_populates="group", cascade="all, delete-orphan")

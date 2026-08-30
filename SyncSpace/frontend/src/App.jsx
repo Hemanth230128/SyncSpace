@@ -29,6 +29,7 @@ function App() {
   const [groupMembers, setGroupMembers] = useState([]);
   const [joinRequests, setJoinRequests] = useState([]);
   const [groupDetailLoading, setGroupDetailLoading] = useState(false);
+  const [deleteGroupLoading, setDeleteGroupLoading] = useState(false);
 
   // Load user profile if a token exists in localStorage
   useEffect(() => {
@@ -44,7 +45,7 @@ function App() {
     }
   }, [currentUser]);
 
-  // --- Auth helpers (unchanged from Phase 2) ---
+  // --- Auth helpers ---
 
   const authHeaders = (authToken) => ({
     Authorization: `Bearer ${authToken || token}`,
@@ -178,7 +179,7 @@ function App() {
   };
 
   // =====================================================================
-  // GROUPS LOGIC (Phase 3)
+  // GROUPS LOGIC (Phase 3 Optimized)
   // =====================================================================
 
   const fetchGroups = async () => {
@@ -246,31 +247,29 @@ function App() {
     setGroupMembers([]);
     setJoinRequests([]);
 
-    // Only fetch details if user is a member
+    // Fetch details in parallel via Promise.all to eliminate sequential round-trip latency
     if (group.membership_status === "ADMIN" || group.membership_status === "MEMBER") {
       try {
-        const membersRes = await fetch(`/api/groups/${group.id}/members`, {
+        const fetchMembersPromise = fetch(`/api/groups/${group.id}/members`, {
           headers: authHeaders(),
-        });
-        if (membersRes.ok) {
-          setGroupMembers(await membersRes.json());
-        }
+        }).then((res) => (res.ok ? res.json() : []));
+
+        const fetchRequestsPromise =
+          group.membership_status === "ADMIN"
+            ? fetch(`/api/groups/${group.id}/requests`, {
+                headers: authHeaders(),
+              }).then((res) => (res.ok ? res.json() : []))
+            : Promise.resolve([]);
+
+        const [membersData, requestsData] = await Promise.all([
+          fetchMembersPromise,
+          fetchRequestsPromise,
+        ]);
+
+        setGroupMembers(membersData);
+        setJoinRequests(requestsData);
       } catch (err) {
         /* ignore */
-      }
-
-      // Fetch join requests only if admin
-      if (group.membership_status === "ADMIN") {
-        try {
-          const reqsRes = await fetch(`/api/groups/${group.id}/requests`, {
-            headers: authHeaders(),
-          });
-          if (reqsRes.ok) {
-            setJoinRequests(await reqsRes.json());
-          }
-        } catch (err) {
-          /* ignore */
-        }
       }
     }
     setGroupDetailLoading(false);
@@ -284,12 +283,13 @@ function App() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to approve");
-      await fetchGroups();
-      // Refresh the selected group's details
-      const updatedGroup = groups.find((g) => g.id === groupId);
-      if (updatedGroup) {
-        await handleSelectGroup({ ...updatedGroup, membership_status: "ADMIN" });
-      }
+      
+      // Update local state without redundant round-trips
+      setJoinRequests((prev) => prev.filter((r) => r.id !== requestId));
+      // Refresh members and groups
+      const membersRes = await fetch(`/api/groups/${groupId}/members`, { headers: authHeaders() });
+      if (membersRes.ok) setGroupMembers(await membersRes.json());
+      fetchGroups();
     } catch (err) {
       setGroupsError(err.message);
     }
@@ -303,11 +303,10 @@ function App() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to reject");
-      await fetchGroups();
-      const updatedGroup = groups.find((g) => g.id === groupId);
-      if (updatedGroup) {
-        await handleSelectGroup({ ...updatedGroup, membership_status: "ADMIN" });
-      }
+      
+      // Update local state
+      setJoinRequests((prev) => prev.filter((r) => r.id !== requestId));
+      fetchGroups();
     } catch (err) {
       setGroupsError(err.message);
     }
@@ -331,6 +330,34 @@ function App() {
     }
   };
 
+  const handleDeleteGroup = async (groupId, groupName) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete the group "${groupName}"? This action cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    setDeleteGroupLoading(true);
+    setGroupsError("");
+    try {
+      const res = await fetch(`/api/groups/${groupId}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Failed to delete group");
+
+      // Reset selection and refresh group list
+      setSelectedGroup(null);
+      setGroupMembers([]);
+      setJoinRequests([]);
+      await fetchGroups();
+    } catch (err) {
+      setGroupsError(err.message);
+    } finally {
+      setDeleteGroupLoading(false);
+    }
+  };
+
   // --- Render helpers ---
 
   const membershipBadge = (status) => {
@@ -344,7 +371,7 @@ function App() {
     <div className="app">
       <header className="header">
         <h1>🤖 AI Collaborative Chat Platform</h1>
-        <p className="subtitle">Phase 3: Groups, Membership & Roles</p>
+        <p className="subtitle">Phase 3: Groups, Membership, Roles & Deletion</p>
       </header>
 
       {/* --- AUTHENTICATION SECTION --- */}
@@ -523,7 +550,7 @@ function App() {
                             ) : (
                               <ul className="members-list">
                                 {groupMembers.map((m) => (
-                                  <li key={m.user_id} className="member-row">
+                                   <li key={m.user_id} className="member-row">
                                     <span className="member-name">
                                       {m.username}
                                       {m.user_id === currentUser.id && " (you)"}
@@ -572,14 +599,24 @@ function App() {
                             </div>
                           )}
 
-                          {/* Leave Group */}
-                          <div className="detail-block leave-block">
+                          {/* Group Actions: Leave & Delete */}
+                          <div className="detail-block group-controls-block">
                             <button
                               className="leave-btn"
                               onClick={() => handleLeaveGroup(group.id)}
                             >
                               🚪 Leave Group
                             </button>
+
+                            {group.membership_status === "ADMIN" && (
+                              <button
+                                className="delete-group-btn"
+                                onClick={() => handleDeleteGroup(group.id, group.name)}
+                                disabled={deleteGroupLoading}
+                              >
+                                {deleteGroupLoading ? "Deleting..." : "🗑️ Delete Group"}
+                              </button>
+                            )}
                           </div>
                         </>
                       ) : group.membership_status === "PENDING" ? (
