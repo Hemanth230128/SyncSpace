@@ -169,6 +169,9 @@ async def generate_grounded_answer(
                 pass
             raise RAGServiceError(f"Google Gemini generation API error ({response.status_code}): {err_msg}")
 
+        if response is None:
+            raise RAGServiceError("Failed to receive response from AI generation service.")
+
         data = response.json()
         candidates = data.get("candidates", [])
         if not candidates:
