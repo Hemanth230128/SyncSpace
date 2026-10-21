@@ -19,3 +19,7 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+
+# Uploaded documents
+uploads/
+SyncSpace/backend/uploads/
