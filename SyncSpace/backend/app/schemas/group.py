@@ -6,10 +6,11 @@ from pydantic import BaseModel, ConfigDict, Field
 class GroupCreate(BaseModel):
     """
     Schema for creating a new group.
-    Only requires a name — the creator is determined from the JWT.
+    Requires a name and optional description explaining what the chat is about.
     """
 
     name: str = Field(..., min_length=1, max_length=100, description="Group display name")
+    description: Optional[str] = Field(None, max_length=500, description="What will this chat be about")
 
 
 class GroupResponse(BaseModel):
@@ -20,6 +21,7 @@ class GroupResponse(BaseModel):
 
     id: int
     name: str
+    description: Optional[str] = None
     created_by: int
     creator_username: str
     created_at: datetime
@@ -36,6 +38,7 @@ class GroupListItem(BaseModel):
 
     id: int
     name: str
+    description: Optional[str] = None
     created_by: int
     creator_username: str
     created_at: datetime

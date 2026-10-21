@@ -6,6 +6,16 @@ from app.schemas.group import (
     GroupResponse,
     JoinRequestResponse,
 )
+from app.schemas.message import MessageResponse, MessageSend
+from app.schemas.document import (
+    DocumentChunkResponse,
+    DocumentResponse,
+    QuestionRequest,
+    QuestionResponse,
+    SimilaritySearchRequest,
+    SimilaritySearchResult,
+    SourceCitation,
+)
 
 __all__ = [
     "UserCreate",
@@ -17,4 +27,15 @@ __all__ = [
     "GroupMemberResponse",
     "GroupResponse",
     "JoinRequestResponse",
+    "MessageResponse",
+    "MessageSend",
+    "DocumentResponse",
+    "DocumentChunkResponse",
+    "SimilaritySearchRequest",
+    "SimilaritySearchResult",
+    "QuestionRequest",
+    "QuestionResponse",
+    "SourceCitation",
 ]
+
+

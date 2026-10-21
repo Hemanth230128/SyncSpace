@@ -6,7 +6,11 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import User
 from app.schemas import TokenResponse, UserCreate, UserLogin, UserResponse
-from app.security import create_access_token, hash_password, verify_password
+from app.security import (
+    create_access_token,
+    async_hash_password,
+    async_verify_password,
+)
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
@@ -26,8 +30,8 @@ async def signup(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
             detail="Username already taken",
         )
 
-    # 2. Hash the plaintext password securely
-    hashed_pwd = hash_password(user_in.password)
+    # 2. Hash the plaintext password non-blockingly
+    hashed_pwd = await async_hash_password(user_in.password)
 
     # 3. Create and persist the user in PostgreSQL
     new_user = User(
@@ -52,8 +56,8 @@ async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
     )
     user = user_query.scalar_one_or_none()
 
-    # 2. Verify existence and password hash
-    if user is None or not verify_password(credentials.password, user.password_hash):
+    # 2. Verify existence and password hash non-blockingly
+    if user is None or not (await async_verify_password(credentials.password, user.password_hash)):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",

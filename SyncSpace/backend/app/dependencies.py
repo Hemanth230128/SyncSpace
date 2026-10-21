@@ -1,3 +1,4 @@
+import time
 from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -11,6 +12,11 @@ from app.security import decode_access_token
 # HTTPBearer extracts the token from `Authorization: Bearer <token>`
 http_bearer = HTTPBearer(auto_error=False)
 
+# In-memory user cache: user_id -> (User, timestamp)
+# Avoids repeated 800ms remote database roundtrips on every authenticated endpoint.
+_USER_CACHE: dict[int, tuple[User, float]] = {}
+CACHE_TTL_SECONDS = 60.0
+
 
 async def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(http_bearer),
@@ -18,7 +24,7 @@ async def get_current_user(
 ) -> User:
     """
     FastAPI dependency that extracts and validates the JWT bearer token
-    from the Authorization header and fetches the matching user from PostgreSQL.
+    from the Authorization header and fetches the matching user from PostgreSQL (or memory cache).
 
     Raises:
         HTTPException (401) if token is missing, invalid, expired, or user is not found.
@@ -57,6 +63,12 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # Check fast in-memory cache first
+    now = time.time()
+    cached = _USER_CACHE.get(user_id)
+    if cached and (now - cached[1]) < CACHE_TTL_SECONDS:
+        return cached[0]
+
     # Query the user from PostgreSQL
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
@@ -68,4 +80,5 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    _USER_CACHE[user_id] = (user, now)
     return user

@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
-from app.routers import auth, groups, health
+from app.routers import auth, chat, documents, groups, health, rag
 
 
 @asynccontextmanager
@@ -18,8 +18,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="AI Chat Platform",
-    description="AI Collaborative Chat Platform — Foundation, Auth & Groups API",
-    version="0.3.0",
+    description="AI Collaborative Chat Platform — Knowledge Base & Real-Time Group Chat API",
+    version="0.6.0",
     lifespan=lifespan,
 )
 
@@ -40,3 +40,7 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(auth.router)
 app.include_router(groups.router)
+app.include_router(chat.router)
+app.include_router(documents.router)
+app.include_router(rag.router)
+

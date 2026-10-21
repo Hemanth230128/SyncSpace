@@ -44,6 +44,7 @@ async def create_group(
     # 1. Create the group
     new_group = Group(
         name=group_in.name.strip(),
+        description=group_in.description.strip() if group_in.description else None,
         created_by=current_user.id,
     )
     db.add(new_group)
@@ -62,6 +63,7 @@ async def create_group(
     return GroupResponse(
         id=new_group.id,
         name=new_group.name,
+        description=new_group.description,
         created_by=new_group.created_by,
         creator_username=current_user.username,
         created_at=new_group.created_at,
@@ -84,6 +86,7 @@ async def list_groups(
         select(
             Group.id,
             Group.name,
+            Group.description,
             Group.created_by,
             Group.created_at,
             User.username.label("creator_username"),
@@ -118,6 +121,7 @@ async def list_groups(
             GroupListItem(
                 id=row.id,
                 name=row.name,
+                description=row.description,
                 created_by=row.created_by,
                 creator_username=row.creator_username,
                 created_at=row.created_at,
@@ -144,6 +148,7 @@ async def get_group(
         select(
             Group.id,
             Group.name,
+            Group.description,
             Group.created_by,
             Group.created_at,
             User.username.label("creator_username"),
@@ -175,6 +180,7 @@ async def get_group(
     return GroupResponse(
         id=row.id,
         name=row.name,
+        description=row.description,
         created_by=row.created_by,
         creator_username=row.creator_username,
         created_at=row.created_at,
